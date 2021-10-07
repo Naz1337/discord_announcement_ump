@@ -163,7 +163,10 @@ class Announcer(commands.Cog):
             login_detail = json.load(f)
 
         await self.session.post("https://std-comm.ump.edu.my/ecommstudent/Login", data=login_detail)
-
+    
+    @commands.command()
+    async def produce_role_form_message(self, ctx: commands.Context, role: discord.Role):
+        print("Hello world")
 
 def setup(bot: commands.Bot):
     bot.add_cog(Announcer(bot))
