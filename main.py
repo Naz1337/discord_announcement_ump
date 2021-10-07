@@ -16,7 +16,7 @@ async def on_ready():
     print("Bot is ready!")
     print(f"Bot username: {bot.user}")
 
-
+@bot.command()
 async def reload(ctx: commands.Context, extension_name: str):
     try:
         bot.reload_extension("cogs." + extension_name)
