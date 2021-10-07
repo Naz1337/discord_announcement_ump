@@ -69,8 +69,10 @@ class Announcer(commands.Cog):
             [stuff for stuff in little_cleaned_text.split("\n") if stuff])
         little_cleaned_text = ' '.join(
             [stuff for stuff in little_cleaned_text.split(" ") if stuff])
-        full_cleaned_text = '\n'.join(
+        little_cleaned_text = '\n'.join(
             [stuff for stuff in little_cleaned_text.split("\n ") if stuff])
+        full_cleaned_text = "\n\n".join(
+            [stuff for stuff in little_cleaned_text.split("\n\n") if stuff])
 
         return full_cleaned_text
 
