@@ -97,7 +97,8 @@ class Announcer(commands.Cog):
         final_embed = discord.Embed.from_dict(embed_data)
 
         for channel in self.active_channels:
-            await channel.send(content="@everyone", embed=final_embed)
+            await channel.send(embed=final_embed)
+            # TODO: need a special role so bot can mention them when a new announcement arrive
             await asyncio.sleep(5)
 
     @tasks.loop(minutes=5.0)
