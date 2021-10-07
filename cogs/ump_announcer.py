@@ -113,7 +113,17 @@ class Announcer(commands.Cog):
                 await self.post_announcement(announcement)
 
     async def get_announcements(self):
-        """Get latest annoucements with the latest first"""
+        """Get latest annoucements with the latest first
+
+        List of announcement page
+        1. https://std-comm.ump.edu.my/ecommstudent/cms/announcement/call2.jsp?action=Y
+        2. https://std-comm.ump.edu.my/ecommstudent/cms/announcement/call2_general.jsp?action=Y
+        3. https://std-comm.ump.edu.my/ecommstudent/cms/announcement/call2.jsp?action=N
+
+        Number 1 seems to contain all kind of announcement, idk 100% yet
+        Number 2 is the announcement you see when you first arrive in ecomm
+        Number 3 is for the unofficial announcement
+        """
         async with self.session.get("https://std-comm.ump.edu.my/ecommstudent/cms/announcement/call2.jsp?action=Y") as response:
             text = await response.text()
             # TODO: Check if logged in or not
