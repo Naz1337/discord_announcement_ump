@@ -30,7 +30,7 @@ class Announcer(commands.Cog):
 
         self.active_channels: List[discord.TextChannel] = []
 
-        channel: discord.TextChannel = self.bot.get_channel(773003105448230932)
+        channel: discord.TextChannel = self.bot.get_channel(894888338182529044)
 
         self.active_channels.append(channel)
 
