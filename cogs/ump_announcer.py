@@ -19,7 +19,7 @@ class Announcer(commands.Cog):
         self.bot = bot
         # connect to locally hosted mongodb
         self.db_client = motor.motor_asyncio.AsyncIOMotorClient()
-        self.db = self.db_client["ump_discord_bot"]
+        self.db = self.db_client["ump_announcement_TEST"]
         self.session = aiohttp.ClientSession()
 
     @commands.Cog.listener()
