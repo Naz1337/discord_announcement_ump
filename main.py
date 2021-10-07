@@ -16,4 +16,16 @@ async def on_ready():
     print("Bot is ready!")
     print(f"Bot username: {bot.user}")
 
+
+async def reload(ctx: commands.Context, extension_name: str):
+    try:
+        bot.reload_extension("cogs." + extension_name)
+    except commands.ExtensionNotFound:
+        await ctx.send(f"{extension_name} does not exist!")
+    except (commands.ExtensionNotLoaded, commands.ExtensionFailed):
+        await ctx.send("Something went wrong while loading " + extension_name)
+    finally:
+        await ctx.send("Reloaded " + extension_name)
+
+
 bot.run(get_token(), bot=True, reconnect=True)
