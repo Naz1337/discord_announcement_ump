@@ -22,11 +22,13 @@ async def reload(ctx: commands.Context, extension_name: str):
     try:
         bot.reload_extension("cogs." + extension_name)
     except commands.ExtensionNotFound:
-        await ctx.send(f"{extension_name} does not exist!")
+        msg = f"{extension_name} does not exist!"
     except (commands.ExtensionNotLoaded, commands.ExtensionFailed):
-        await ctx.send("Something went wrong while loading " + extension_name)
+        msg = "Something went wrong while loading " + extension_name
     finally:
-        await ctx.send("Reloaded " + extension_name)
+        msg = "Reloaded " + extension_name
+    
+    await ctx.send(msg, delete_after=5)
 
 
 bot.run(get_token(), bot=True, reconnect=True)
