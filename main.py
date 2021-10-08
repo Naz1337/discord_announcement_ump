@@ -40,12 +40,11 @@ async def on_guild_join(guild: discord.Guild):
 async def reload(ctx: commands.Context, extension_name: str):
     try:
         bot.reload_extension("cogs." + extension_name)
+        msg = "Reloaded " + extension_name
     except commands.ExtensionNotFound:
         msg = f"{extension_name} does not exist!"
     except (commands.ExtensionNotLoaded, commands.ExtensionFailed):
         msg = "Something went wrong while loading " + extension_name
-    finally:
-        msg = "Reloaded " + extension_name
     
     await ctx.send(msg, delete_after=5)
 
