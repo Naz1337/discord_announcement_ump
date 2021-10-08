@@ -1,6 +1,9 @@
 import os
+import discord
 from discord.ext import commands
 from utils import *
+import motor.motor_asyncio
+import pymongo.errors
 
 
 bot = commands.Bot('.', description="Grabbing those announcement ya")
@@ -13,8 +16,24 @@ if __name__ == "__main__":
 
 @bot.event
 async def on_ready():
+    print("doing some database task... ", end="")
+    coll = motor.motor_asyncio.AsyncIOMotorClient()["ump_announcement_TEST"]["server_data"]
+
+    guild: discord.Guild
+    for guild in bot.guilds:
+        await init_server_db(guild, coll)
+        
+    print("DONE!")
+
     print("Bot is ready!")
     print(f"Bot username: {bot.user}")
+
+
+@bot.event
+async def on_guild_join(guild: discord.Guild):
+    coll = motor.motor_asyncio.AsyncIOMotorClient()["ump_announcement_TEST"]["server_data"]
+    await init_server_db(guild, coll)
+
 
 @bot.command()
 @commands.is_owner()
