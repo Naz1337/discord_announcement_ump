@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands
 from utils import *
 import motor.motor_asyncio
+from strings import *
 
 
 bot = commands.Bot('.', description="Grabbing those announcement ya")
@@ -16,7 +17,7 @@ if __name__ == "__main__":
 @bot.event
 async def on_ready():
     print("doing some database task... ", end="")
-    coll = motor.motor_asyncio.AsyncIOMotorClient()["ump_announcement_TEST"]["server_data"]
+    coll = motor.motor_asyncio.AsyncIOMotorClient()[DB_NAME][SERVER_DATA_NAME]
 
     guild: discord.Guild
     for guild in bot.guilds:
@@ -30,7 +31,7 @@ async def on_ready():
 
 @bot.event
 async def on_guild_join(guild: discord.Guild):
-    coll = motor.motor_asyncio.AsyncIOMotorClient()["ump_announcement_TEST"]["server_data"]
+    coll = motor.motor_asyncio.AsyncIOMotorClient()[DB_NAME][SERVER_DATA_NAME]
     await init_server_db(guild, coll)
 
 
