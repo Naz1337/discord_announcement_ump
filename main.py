@@ -22,6 +22,7 @@ async def on_ready():
     guild: discord.Guild
     for guild in bot.guilds:
         await init_server_db(guild, coll)
+        # TODO: Do a batch insert instead
         
     print("DONE!")
 
