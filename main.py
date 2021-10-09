@@ -3,7 +3,6 @@ import discord
 from discord.ext import commands
 from utils import *
 import motor.motor_asyncio
-import pymongo.errors
 
 
 bot = commands.Bot('.', description="Grabbing those announcement ya")
