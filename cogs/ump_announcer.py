@@ -180,7 +180,7 @@ class Announcer(commands.Cog):
     
     @commands.command()
     async def use_this_channel(self, ctx: commands.Context):
-        old_id: Union[int, None] = await self.db[SERVER_DATA_NAME].update_one(
+        old_id: Union[int, None] = await self.db[SERVER_DATA_NAME].find_one_and_update(
             {"_id": ctx.guild.id}, 
             {"$set": {"announcement_channel": ctx.channel.id}}, 
             projection={"_id": 0, "announcement_channel": 1}).get("announcement_channel", None)
