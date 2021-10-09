@@ -1,5 +1,6 @@
 import asyncio
 import json
+from strings import *
 from typing import *
 from discord.ext import tasks, commands
 import motor.motor_asyncio
@@ -19,7 +20,7 @@ class Announcer(commands.Cog):
         self.bot = bot
         # connect to locally hosted mongodb
         self.db_client = motor.motor_asyncio.AsyncIOMotorClient()
-        self.db = self.db_client["ump_announcement_TEST"]
+        self.db = self.db_client[DB_NAME]
         self.session = aiohttp.ClientSession()
 
     @commands.Cog.listener()
@@ -168,7 +169,14 @@ class Announcer(commands.Cog):
     
     @commands.command()
     async def produce_role_form_message(self, ctx: commands.Context, role: discord.Role):
-        print("Hello world")
+        """This command will register that role you put to be use as the """
+        message: discord.Message = await ctx.send(f"React :+1: to subscribe to ecomm announcement. React :-1: to remove {role.mention}")
+        await message.add_reaction("👍")
+        await message.add_reaction("👎")
+
+        coll = self.db[SERVER_DATA_NAME]
+
+        await coll.update_one({"_id": ctx.guild.id}, {"$set": {"role_to_mention": role.id}})
 
 def setup(bot: commands.Bot):
     bot.add_cog(Announcer(bot))
