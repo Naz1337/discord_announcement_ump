@@ -177,6 +177,24 @@ class Announcer(commands.Cog):
         coll = self.db[SERVER_DATA_NAME]
 
         await coll.update_one({"_id": ctx.guild.id}, {"$set": {"role_to_mention": role.id}})
+    
+    @commands.command()
+    async def use_this_channel(self, ctx: commands.Context):
+        old_id: Union[int, None] = await self.db[SERVER_DATA_NAME].update_one(
+            {"_id": ctx.guild.id}, 
+            {"$set": {"announcement_channel": ctx.channel.id}}, 
+            projection={"_id": 0, "announcement_channel": 1}).get("announcement_channel", None)
+        
+        if old_id != None:
+            old_channel: Union[discord.TextChannel, None] = self.bot.get_channel(old_id)
+            if old_channel != None:
+                self.active_channels.remove(old_channel)
+        self.active_channels.append(ctx.channel)
+        # TODO: use lock for this and in the post_announcement function
+
+        await ctx.message.delete()
+        await ctx.send("Using this channel to post announcement", delete_after=5)
+
 
 def setup(bot: commands.Bot):
     bot.add_cog(Announcer(bot))
