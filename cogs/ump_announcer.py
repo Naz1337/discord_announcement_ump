@@ -178,6 +178,7 @@ class Announcer(commands.Cog):
         await self.session.post("https://std-comm.ump.edu.my/ecommstudent/Login", data=login_detail)
     
     @commands.command()
+    @commands.has_guild_permissions(administrator=True)
     async def produce_role_form_message(self, ctx: commands.Context, role: discord.Role):
         """This command will register that role you put to be use as the """
         message: discord.Message = await ctx.send(f"React :+1: to subscribe to ecomm announcement. React :-1: to remove {role.mention}")
@@ -189,6 +190,7 @@ class Announcer(commands.Cog):
         await coll.update_one({"_id": ctx.guild.id}, {"$set": {"role_to_mention": role.id}})
     
     @commands.command()
+    @commands.has_guild_permissions(administrator=True)
     async def use_this_channel(self, ctx: commands.Context):
         result: Dict = await self.db[SERVER_DATA_NAME].find_one_and_update(
             {"_id": ctx.guild.id}, 
