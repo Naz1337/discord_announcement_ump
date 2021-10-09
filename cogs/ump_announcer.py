@@ -27,13 +27,23 @@ class Announcer(commands.Cog):
     async def on_ready(self):
         print("UMP announcement grabber is loaded!")
 
+
+    async def post_load(self):
+        if not self.bot.is_ready():
+            self.bot.loop.create_task(self.post_load())
+            return
+
         await self.login_ecomm()
 
         self.active_channels: List[discord.TextChannel] = []
 
-        channel: discord.TextChannel = self.bot.get_channel(894888338182529044)
+        # channel: discord.TextChannel = self.bot.get_channel(894888338182529044)
+        # self.active_channels.append(channel)
 
-        self.active_channels.append(channel)
+        coll = self.db[SERVER_DATA_NAME]
+        cursor = coll.find({"announcement_channel": {"$exists": 1}}, {"_id": 0, "announcement_channel": 1})
+        async for channel_data in cursor:
+            self.active_channels.append(self.bot.get_channel(channel_data["announcement_channel"]))
 
         self.update_announcement_db.start()
 
@@ -180,15 +190,18 @@ class Announcer(commands.Cog):
     
     @commands.command()
     async def use_this_channel(self, ctx: commands.Context):
-        old_id: Union[int, None] = await self.db[SERVER_DATA_NAME].find_one_and_update(
+        result: Dict = await self.db[SERVER_DATA_NAME].find_one_and_update(
             {"_id": ctx.guild.id}, 
             {"$set": {"announcement_channel": ctx.channel.id}}, 
-            projection={"_id": 0, "announcement_channel": 1}).get("announcement_channel", None)
+            projection={"_id": 0, "announcement_channel": 1})
+        
+        old_id = result.get("announcement_channel", None)
         
         if old_id != None:
             old_channel: Union[discord.TextChannel, None] = self.bot.get_channel(old_id)
             if old_channel != None:
                 self.active_channels.remove(old_channel)
+        
         self.active_channels.append(ctx.channel)
         # TODO: use lock for this and in the post_announcement function
 
@@ -198,3 +211,5 @@ class Announcer(commands.Cog):
 
 def setup(bot: commands.Bot):
     bot.add_cog(Announcer(bot))
+    announcer: Announcer = bot.get_cog("Announcer")
+    bot.loop.create_task(announcer.post_load())
