@@ -7,11 +7,19 @@ import motor.motor_asyncio
 import discord
 import aiohttp
 import bs4
-import collections
+from dataclasses import dataclass
 
 
-Announcement = collections.namedtuple("Announcement", "title, link")
-ChannelRole = collections.namedtuple("ChannelRole", "channel, role")
+@dataclass
+class Announcement:
+    title: str
+    link: str
+
+@dataclass
+class ChannelRole:
+    channel: discord.TextChannel
+    role: discord.Role
+
 
 
 class Announcer(commands.Cog):
