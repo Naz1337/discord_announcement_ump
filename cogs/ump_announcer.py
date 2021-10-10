@@ -11,6 +11,7 @@ import collections
 
 
 Announcement = collections.namedtuple("Announcement", "title, link")
+ChannelRole = collections.namedtuple("ChannelRole", "channel, role")
 
 
 class Announcer(commands.Cog):
@@ -35,7 +36,7 @@ class Announcer(commands.Cog):
 
         await self.login_ecomm()
 
-        self.active_channels: List[discord.TextChannel] = []
+        self.channel_record_list: List[discord.TextChannel] = []
 
         # channel: discord.TextChannel = self.bot.get_channel(894888338182529044)
         # self.active_channels.append(channel)
@@ -43,7 +44,7 @@ class Announcer(commands.Cog):
         coll = self.db[SERVER_DATA_NAME]
         cursor = coll.find({"announcement_channel": {"$exists": 1}}, {"_id": 0, "announcement_channel": 1})
         async for channel_data in cursor:
-            self.active_channels.append(self.bot.get_channel(channel_data["announcement_channel"]))
+            self.channel_record_list.append(self.bot.get_channel(channel_data["announcement_channel"]))
 
         self.update_announcement_db.start()
 
@@ -109,7 +110,7 @@ class Announcer(commands.Cog):
 
         final_embed = discord.Embed.from_dict(embed_data)
 
-        for channel in self.active_channels:
+        for channel in self.channel_record_list:
             await channel.send(embed=final_embed)
             # TODO: need a special role so bot can mention them when a new announcement arrive
             await asyncio.sleep(5)
@@ -202,9 +203,9 @@ class Announcer(commands.Cog):
         if old_id != None:
             old_channel: Union[discord.TextChannel, None] = self.bot.get_channel(old_id)
             if old_channel != None:
-                self.active_channels.remove(old_channel)
+                self.channel_record_list.remove(old_channel)
         
-        self.active_channels.append(ctx.channel)
+        self.channel_record_list.append(ctx.channel)
         # TODO: use lock for this and in the post_announcement function
 
         await ctx.message.delete()
