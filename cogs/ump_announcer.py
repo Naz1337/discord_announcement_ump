@@ -15,11 +15,11 @@ class Announcement:
     title: str
     link: str
 
+
 @dataclass
 class ChannelRole:
     channel: discord.TextChannel
-    role: discord.Role
-
+    role: Union[discord.Role, None]
 
 
 class Announcer(commands.Cog):
@@ -36,7 +36,6 @@ class Announcer(commands.Cog):
     async def on_ready(self):
         print("UMP announcement grabber is loaded!")
 
-
     async def post_load(self):
         if not self.bot.is_ready():
             self.bot.loop.create_task(self.post_load())
@@ -50,24 +49,39 @@ class Announcer(commands.Cog):
         # self.active_channels.append(channel)
 
         coll = self.db[SERVER_DATA_NAME]
-        cursor = coll.find({"announcement_channel": {"$exists": 1}}, {"_id": 0, "announcement_channel": 1})
-        async for channel_data in cursor:
-            self.channel_role_list.append(self.bot.get_channel(channel_data["announcement_channel"]))
+        cursor = coll.find({"announcement_channel": {"$exists": 1}})
+
+        async for server_data in cursor:
+            guild: Union[discord.Guild, None] = self.bot.get_guild(
+                server_data["_id"])
+
+            if guild == None:
+                continue
+
+            role: Union[discord.Role, None] = guild.get_role(
+                server_data.get("role_to_mention", 0))
+            text_channel: Union[discord.TextChannel, None] = self.bot.get_channel(
+                server_data["announcement_channel"])
+
+            if text_channel != None:
+                self.channel_role_list.append(
+                    ChannelRole(
+                        text_channel,
+                        role))
 
         self.update_announcement_db.start()
 
-
     def __del__(self):
-        self.bot.loop.run_until_complete(self.session.get("https://std-comm.ump.edu.my/ecommstudent/Logout"))
+        self.bot.loop.run_until_complete(self.session.get(
+            "https://std-comm.ump.edu.my/ecommstudent/Logout"))
         self.bot.loop.run_until_complete(self.session.close())
         self.bot.loop.run_until_complete(asyncio.sleep(1))
-
 
     def cog_unload(self):
-        self.bot.loop.run_until_complete(self.session.get("https://std-comm.ump.edu.my/ecommstudent/Logout"))
+        self.bot.loop.run_until_complete(self.session.get(
+            "https://std-comm.ump.edu.my/ecommstudent/Logout"))
         self.bot.loop.run_until_complete(self.session.close())
         self.bot.loop.run_until_complete(asyncio.sleep(1))
-
 
     @staticmethod
     def clean_description(html_text: str) -> str:
@@ -118,9 +132,21 @@ class Announcer(commands.Cog):
 
         final_embed = discord.Embed.from_dict(embed_data)
 
-        for channel in self.channel_role_list:
-            await channel.send(embed=final_embed)
-            # TODO: need a special role so bot can mention them when a new announcement arrive
+        for channel_role in self.channel_role_list:
+            if channel_role.role != None:
+                try:
+                    await channel_role.channel.send(
+                        f"{channel_role.role.mention} {embed_data['title']}",
+                        embed=final_embed)
+                except discord.Forbidden:
+                    continue
+            else:
+                try:
+                    await channel_role.channel.send(embed=final_embed)
+                    # TODO: need a special role so bot can mention them when a new announcement arrive
+                except discord.Forbidden:
+                    continue
+
             await asyncio.sleep(5)
 
     @tasks.loop(minutes=5.0)
@@ -185,39 +211,80 @@ class Announcer(commands.Cog):
             login_detail = json.load(f)
 
         await self.session.post("https://std-comm.ump.edu.my/ecommstudent/Login", data=login_detail)
-    
-    @commands.command()
+
+    @commands.command(aliases=["set_role_to_mention"])
     @commands.has_guild_permissions(administrator=True)
     async def produce_role_form_message(self, ctx: commands.Context, role: discord.Role):
-        """This command will register that role you put to be use as the """
-        message: discord.Message = await ctx.send(f"React :+1: to subscribe to ecomm announcement. React :-1: to remove {role.mention}")
-        await message.add_reaction("👍")
-        await message.add_reaction("👎")
-
+        """The role given will be used to mention when a new announcement arrive
+        
+        For now, there is no react to get role function so the admin need to give it manually to the people
+        but you can also use another bot for this stuff!
+        """
         coll = self.db[SERVER_DATA_NAME]
 
-        await coll.update_one({"_id": ctx.guild.id}, {"$set": {"role_to_mention": role.id}})
-    
+        result: Dict = await coll.find_one_and_update({"_id": ctx.guild.id}, {"$set": {"role_to_mention": role.id}})
+
+        channel_id: Union[int, None] = result.get("announcement_channel", None)
+
+        if channel_id != None:
+            for channel_role in self.channel_role_list:
+                if channel_role.channel.id == channel_id:
+                    channel_role.role = role
+                    break
+
+        # message: discord.Message = await ctx.send(f"React :+1: to subscribe to ecomm announcement. React :-1: to remove {role.mention}")
+        # await message.add_reaction("👍")
+        # await message.add_reaction("👎")
+
     @commands.command()
     @commands.has_guild_permissions(administrator=True)
     async def use_this_channel(self, ctx: commands.Context):
         result: Dict = await self.db[SERVER_DATA_NAME].find_one_and_update(
-            {"_id": ctx.guild.id}, 
-            {"$set": {"announcement_channel": ctx.channel.id}}, 
-            projection={"_id": 0, "announcement_channel": 1})
-        
-        old_id = result.get("announcement_channel", None)
-        
-        if old_id != None:
-            old_channel: Union[discord.TextChannel, None] = self.bot.get_channel(old_id)
-            if old_channel != None:
-                self.channel_role_list.remove(old_channel)
-        
-        self.channel_role_list.append(ctx.channel)
-        # TODO: use lock for this and in the post_announcement function
+            {"_id": ctx.guild.id},
+            {"$set": {"announcement_channel": ctx.channel.id}})
+
+        old_channel_id: Union[int, None] = result.get(
+            "announcement_channel", None)
+
+        if old_channel_id != None:
+            for channel_role in self.channel_role_list:
+                if old_channel_id == channel_role.channel.id:
+                    channel_role.channel = ctx.channel
+                    break
+            else:
+                role_id: Union[int, None] = result.get("role_to_mention", None)
+                if role_id != None:
+                    role = ctx.guild.get_role(role_id)
+                else:
+                    role = None
+
+                role: Union[discord.Role, None]
+                self.channel_role_list.append(
+                    ChannelRole(
+                        ctx.channel,
+                        role))
 
         await ctx.message.delete()
         await ctx.send("Using this channel to post announcement", delete_after=5)
+
+    @commands.command()
+    @commands.has_guild_permissions(administrator=True)
+    async def clear_role_to_mention(self, ctx: commands.Context):
+        coll = self.db[SERVER_DATA_NAME]
+        result: Union[Dict, None] = await coll.find_one_and_update(
+            {"_id": ctx.guild.id},
+            {"$unset": {"role_to_mention": ""}})
+
+        if result != None:
+            channel_id: Union[int, None] = result.get(
+                "announcement_channel", None)
+            if channel_id != None:
+                for channel_role in self.channel_role_list:
+                    if channel_role.channel.id == channel_id:
+                        channel_role.role = None
+                        break
+
+        await ctx.send("Cleared role_to_mention for your server!")
 
 
 def setup(bot: commands.Bot):
