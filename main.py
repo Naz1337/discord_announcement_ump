@@ -50,17 +50,17 @@ async def reload(ctx: commands.Context, extension_name: str):
     await ctx.send(msg, delete_after=5)
 
 
-@bot.command(name="eval")
-@commands.is_owner()
-async def _eval(ctx: commands.Context, *, python_script: str):
-    result = eval(python_script)
+# @bot.command(name="eval")
+# @commands.is_owner()
+# async def _eval(ctx: commands.Context, *, python_script: str):
+#     result = eval(python_script)
 
-    print(f"Ran {python_script}| result -> {result}")
+#     print(f"Ran {python_script}| result -> {result}")
 
-    if result != None and result != "":
-        await ctx.send(content=result)
-    else:
-        await ctx.send(content="*blank*")
+#     if result != None and result != "":
+#         await ctx.send(content=result)
+#     else:
+#         await ctx.send(content="*blank*")
 
 
 bot.run(get_token(), bot=True, reconnect=True)
