@@ -69,7 +69,11 @@ class Announcer(commands.Cog):
                         text_channel,
                         role))
 
-        self.update_announcement_db.start()
+        try:
+            self.update_announcement_db.start()
+        except RuntimeError:
+            self.update_announcement_db.cancel()
+            self.update_announcement_db.start()
 
     def __del__(self):
         self.bot.loop.run_until_complete(self.session.get(
