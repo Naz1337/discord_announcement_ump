@@ -8,6 +8,8 @@ import discord
 import aiohttp
 import bs4
 from dataclasses import dataclass
+import hashlib
+import datetime
 
 
 @dataclass
@@ -120,6 +122,20 @@ class Announcer(commands.Cog):
 
         cleaned_description = await self.bot.loop.run_in_executor(None, self.clean_description, html_text)
 
+        announcement_hash = await self.bot.loop.run_in_executor(None, self.hash_text, cleaned_description)
+
+        collection = self.db[ANNOUNCEMENT_HASH_NAME]
+
+        result: Union[Dict, None] = await collection.find_one({"_id": announcement_hash})
+        if result == None:
+            await collection.insert_one({"_id": announcement_hash, "last_seen": datetime.datetime.now(datetime.timezone.utc)})
+        else:
+            last_seen: datetime.datetime = result.get("last_seen")
+            last_seen = last_seen.astimezone(datetime.timezone.utc)
+
+            if (datetime.datetime.now(datetime.timezone.utc) - last_seen).days < 2:
+                return
+            await collection.update_one({"_id": announcement_hash}, {"$set": {"last_seen": datetime.datetime.now(datetime.timezone.utc)}})
         embed_data = {
             "title": announcement.title[:255],
             "type": "rich",
@@ -155,7 +171,7 @@ class Announcer(commands.Cog):
 
     @tasks.loop(minutes=5.0)
     async def update_announcement_db(self):
-        collection = self.db["announcement"]
+        collection = self.db[ANNOUNCEMENT_NAME]
 
         announcements = await self.get_announcements()
         announcements.reverse()  # insert the oldest first then the latest
@@ -289,6 +305,10 @@ class Announcer(commands.Cog):
                         break
 
         await ctx.send("Cleared role_to_mention for your server!")
+    
+    @staticmethod
+    def hash_text(text: str) -> bytes:
+        return hashlib.sha256(text.encode(), usedforsecurity=False).digest()
 
 
 def setup(bot: commands.Bot):
