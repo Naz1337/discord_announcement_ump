@@ -195,7 +195,9 @@ class Announcer(commands.Cog):
         """
         async with self.session.get("https://std-comm.ump.edu.my/ecommstudent/cms/announcement/call2.jsp?action=Y") as response:
             text = await response.text()
-            # TODO: Check if logged in or not
+            if "java.lang.NullPointerException" in text:
+                await self.login_ecomm()
+                return self.get_announcements()
 
         announcements = await self.bot.loop.run_in_executor(None, self.parse_announcement_html, text)
 
